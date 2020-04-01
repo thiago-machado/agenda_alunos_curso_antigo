@@ -6,6 +6,7 @@
     <!-- do Android 6 para frente, além dessa configuração, precisamos pedir a confiramação no código -->
     <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"

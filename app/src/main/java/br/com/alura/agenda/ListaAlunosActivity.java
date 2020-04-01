@@ -12,6 +12,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ContextMenu;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
@@ -23,6 +24,8 @@ import android.widget.Toast;
 import java.util.List;
 
 import br.com.alura.agenda.adaper.AlunosAdapter;
+import br.com.alura.agenda.async.EnviaAlunosTask;
+import br.com.alura.agenda.converter.AlunoConverter;
 import br.com.alura.agenda.dao.AlunoDAO;
 import br.com.alura.agenda.modelo.Aluno;
 
@@ -177,5 +180,22 @@ public class ListaAlunosActivity extends AppCompatActivity {
         if(requestCode == 100) {
             Log.i("resultado_permissao", "resultado da permissao da ligacao...");
         }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_lista_alunos, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+
+        switch(item.getItemId()) {
+            case R.id.menu_enviar_notas :
+                new EnviaAlunosTask(this).execute();
+                break;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }
