@@ -65,6 +65,16 @@ public class AlunosAdapter extends BaseAdapter {
         TextView campoTelefone = view.findViewById(R.id.item_telefone);
         campoTelefone.setText(aluno.getTelefone());
 
+        TextView campoEndereco = view.findViewById(R.id.item_endereco);
+        if(campoEndereco != null) { // caso seja diferente de NULL, significa que estamos no modo LANDSCAPE
+            campoEndereco.setText(aluno.getEndereco());
+        }
+
+        TextView campoSite = view.findViewById(R.id.item_site);
+        if(campoSite != null) { // caso seja diferente de NULL, significa que estamos no modo LANDSCAPE
+            campoSite.setText(aluno.getSite());
+        }
+
         ImageView campoFoto = view.findViewById(R.id.item_foto);
         String caminhoFoto = aluno.getCaminhoFoto();
 
