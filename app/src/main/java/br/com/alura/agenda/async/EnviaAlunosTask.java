@@ -1,5 +1,6 @@
 package br.com.alura.agenda.async;
 
+import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.AsyncTask;
@@ -15,6 +16,7 @@ import br.com.alura.agenda.repository.WebClient;
 
 public class EnviaAlunosTask extends AsyncTask<Void, String, String> {
 
+    @SuppressLint("StaticFieldLeak")
     private final Context context;
 
     private ProgressDialog dialog;
