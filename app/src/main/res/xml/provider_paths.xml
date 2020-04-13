@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Nesse arquivo, definiremos quais os caminhos e tipos de
+    arquivo os quais daremos permissão de acesso para os outros aplicativos.
+    Como não queremos ter um controle fino desse tipo de permissão,
+    vamos apenas falar que o qualquer arquivo do diretório raiz da
+    nossa aplicação pode ser acessado. -->
+    <external-path name="external_files" path="." />
+</paths>

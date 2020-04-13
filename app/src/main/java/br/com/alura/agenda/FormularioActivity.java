@@ -4,12 +4,15 @@ import android.content.Intent;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.FileProvider;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -47,6 +50,15 @@ public class FormularioActivity extends AppCompatActivity {
         botaoFoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
+                /*
+                Não é o caminho certo para resolver isso, isso basicamente removerá as políticas de
+                modo estrito  e ignorará o aviso de segurança.
+
+                 */
+                //StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
+                //StrictMode.setVmPolicy(builder.build());
+
                 /*
                 INVOCANDO AÇÃO DE TIRAR UMA FOTO.
 
@@ -60,9 +72,15 @@ public class FormularioActivity extends AppCompatActivity {
                 NO LOCAL QUE DESEJAMOS.
                  */
                 Intent intentCamera = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                caminhoFoto = getExternalFilesDir(null) + "/"+ System.currentTimeMillis() +".jpg";
+                caminhoFoto = getExternalFilesDir("fotos") + "/"+ System.currentTimeMillis() +".jpg";
+
+                Log.i("caminhofoto", "caminho: " + caminhoFoto);
                 File arquivoFoto = new File(caminhoFoto);
-                intentCamera.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(arquivoFoto));
+
+                //intentCamera.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(arquivoFoto));
+                intentCamera.putExtra(MediaStore.EXTRA_OUTPUT,
+                        FileProvider.getUriForFile(FormularioActivity.this,
+                                BuildConfig.APPLICATION_ID + ".provider", arquivoFoto));
                 startActivityForResult(intentCamera, REQUEST_CODE);
             }
         });
@@ -102,7 +120,7 @@ public class FormularioActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if(requestCode == REQUEST_CODE && resultCode == RESULT_OK) {
-           helper.carregaImagem(caminhoFoto);
+            helper.carregaImagem(caminhoFoto);
         }
     }
 }
