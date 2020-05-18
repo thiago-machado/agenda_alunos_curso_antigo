@@ -1,11 +1,26 @@
 package br.com.alura.agenda.modelo;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.io.Serializable;
 
+/*
+Ignora os campos que são desconhecidos (não constam na classe)
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Aluno implements Serializable {
 
-    private Long id;
+    /**
+     * Na nossa aplicação Android temos um atributo id, mas no servidor esse atributo se chama idCliente.
+     * Como podemos resolver diferença?
+     *
+     * O jackson tem uma maneira muito simples de resolver esse problema, basta que utilizemos a
+     * anotação @JsonProperty fornecendo o nome que será utilizado como chave do JSON para aquele valor.
+     */
+    //@JsonProperty("idCliente")
+    private String id; // AGORA É UM UUID
     private String nome;
     private String endereco;
     private String telefone;
@@ -13,11 +28,11 @@ public class Aluno implements Serializable {
     private Double nota;
     private String caminhoFoto;
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

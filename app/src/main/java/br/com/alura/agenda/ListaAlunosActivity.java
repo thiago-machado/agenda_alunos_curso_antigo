@@ -28,6 +28,11 @@ import br.com.alura.agenda.async.EnviaAlunosTask;
 import br.com.alura.agenda.converter.AlunoConverter;
 import br.com.alura.agenda.dao.AlunoDAO;
 import br.com.alura.agenda.modelo.Aluno;
+import br.com.alura.agenda.modelo.dto.AlunosSync;
+import br.com.alura.agenda.retrofit.RetrofitInializador;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class ListaAlunosActivity extends AppCompatActivity {
 
@@ -65,6 +70,24 @@ public class ListaAlunosActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+
+        Call<AlunosSync> call = new RetrofitInializador().getAlunoService().lista();
+        call.enqueue(new Callback<AlunosSync>() {
+            @Override
+            public void onResponse(Call<AlunosSync> call, Response<AlunosSync> response) {
+                List<Aluno> alunos = response.body().getAlunos();
+                AlunoDAO dao = new AlunoDAO(ListaAlunosActivity.this);
+                dao.sincroniza(alunos);
+                dao.close();
+                carregaLista();
+            }
+
+            @Override
+            public void onFailure(Call<AlunosSync> call, Throwable t) {
+                Log.e("get_alunos", "FALHOU A BUSCA DOS ALUNOS...", t);
+            }
+        });
+
         carregaLista();
     }
 
