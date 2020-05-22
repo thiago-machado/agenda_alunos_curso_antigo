@@ -6,6 +6,7 @@ import android.content.Intent;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -16,7 +17,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -25,11 +25,10 @@ import java.util.List;
 
 import br.com.alura.agenda.adaper.AlunosAdapter;
 import br.com.alura.agenda.async.EnviaAlunosTask;
-import br.com.alura.agenda.converter.AlunoConverter;
 import br.com.alura.agenda.dao.AlunoDAO;
 import br.com.alura.agenda.modelo.Aluno;
 import br.com.alura.agenda.modelo.dto.AlunosSync;
-import br.com.alura.agenda.retrofit.RetrofitInializador;
+import br.com.alura.agenda.retrofit.RetrofitInicializador;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -37,6 +36,7 @@ import retrofit2.Response;
 public class ListaAlunosActivity extends AppCompatActivity {
 
     private ListView listaAlunos;
+    private SwipeRefreshLayout swipe;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,33 +45,38 @@ public class ListaAlunosActivity extends AppCompatActivity {
 
         listaAlunos = findViewById(R.id.lista_alunos);
 
-        listaAlunos.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
-                Aluno aluno = (Aluno) listaAlunos.getItemAtPosition(position);
-                Intent intentVaiProFormulario = new Intent(ListaAlunosActivity.this, FormularioActivity.class);
-                intentVaiProFormulario.putExtra("aluno", aluno);
-                startActivity(intentVaiProFormulario);
-            }
+        configurarSwipe();
+
+        listaAlunos.setOnItemClickListener((adapterView, view, position, id) -> {
+            Aluno aluno = (Aluno) listaAlunos.getItemAtPosition(position);
+            Intent intentVaiProFormulario = new Intent(ListaAlunosActivity.this, FormularioActivity.class);
+            intentVaiProFormulario.putExtra("aluno", aluno);
+            startActivity(intentVaiProFormulario);
         });
 
-        Button novoAluno = (Button) findViewById(R.id.novo_aluno);
-        novoAluno.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intentVaiProFormulario = new Intent(ListaAlunosActivity.this, FormularioActivity.class);
-                startActivity(intentVaiProFormulario);
-            }
+        Button novoAluno = findViewById(R.id.novo_aluno);
+        novoAluno.setOnClickListener(view -> {
+            Intent intentVaiProFormulario = new Intent(ListaAlunosActivity.this, FormularioActivity.class);
+            startActivity(intentVaiProFormulario);
         });
 
         registerForContextMenu(listaAlunos);
+        buscaAlunosNaAPI();
+    }
+
+    private void configurarSwipe() {
+        swipe = findViewById(R.id.swipe_lista_alunos);
+        swipe.setOnRefreshListener(() -> buscaAlunosNaAPI());
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        carregaLista();
+    }
 
-        Call<AlunosSync> call = new RetrofitInializador().getAlunoService().lista();
+    private void buscaAlunosNaAPI() {
+        Call<AlunosSync> call = new RetrofitInicializador().getAlunoService().lista();
         call.enqueue(new Callback<AlunosSync>() {
             @Override
             public void onResponse(Call<AlunosSync> call, Response<AlunosSync> response) {
@@ -80,15 +85,15 @@ public class ListaAlunosActivity extends AppCompatActivity {
                 dao.sincroniza(alunos);
                 dao.close();
                 carregaLista();
+                swipe.setRefreshing(false); // SUMINDO COM O GIF DE REFRESH DO SWIPE
             }
 
             @Override
             public void onFailure(Call<AlunosSync> call, Throwable t) {
                 Log.e("get_alunos", "FALHOU A BUSCA DOS ALUNOS...", t);
+                swipe.setRefreshing(false);
             }
         });
-
-        carregaLista();
     }
 
     @Override
@@ -107,20 +112,17 @@ public class ListaAlunosActivity extends AppCompatActivity {
 
     private void criarMenuItemLigar(ContextMenu menu, final Aluno aluno) {
         MenuItem itemLigar = menu.add("Ligar");
-        itemLigar.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
+        itemLigar.setOnMenuItemClickListener(item -> {
 
-                // Caso o usuário ainda não tenha dado a permissão para fazer ligação, entra no if pedindo a permissão
-                if (ActivityCompat.checkSelfPermission(ListaAlunosActivity.this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(ListaAlunosActivity.this, new String[] {Manifest.permission.CALL_PHONE}, 100);
-                } else {
-                    Intent intentLigar = new Intent(Intent.ACTION_CALL);
-                    intentLigar.setData(Uri.parse("tel:" + aluno.getTelefone()));
-                    startActivity(intentLigar);
-                }
-                return false;
+            // Caso o usuário ainda não tenha dado a permissão para fazer ligação, entra no if pedindo a permissão
+            if (ActivityCompat.checkSelfPermission(ListaAlunosActivity.this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(ListaAlunosActivity.this, new String[]{Manifest.permission.CALL_PHONE}, 100);
+            } else {
+                Intent intentLigar = new Intent(Intent.ACTION_CALL);
+                intentLigar.setData(Uri.parse("tel:" + aluno.getTelefone()));
+                startActivity(intentLigar);
             }
+            return false;
         });
 
     }
@@ -141,19 +143,25 @@ public class ListaAlunosActivity extends AppCompatActivity {
 
     private void criarMenuItemDeletar(ContextMenu menu, final Aluno aluno) {
         MenuItem deletar = menu.add("Deletar");
-        deletar.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem menuItem) {
+        deletar.setOnMenuItemClickListener(menuItem -> {
 
-                Toast.makeText(ListaAlunosActivity.this, "Deletar o aluno " + aluno.getNome(), Toast.LENGTH_SHORT).show();
+            Call<Void> call = new RetrofitInicializador().getAlunoService().deleta(aluno.getId());
 
-                AlunoDAO dao = new AlunoDAO(ListaAlunosActivity.this);
-                dao.deleta(aluno);
-                dao.close();
+            call.enqueue(new Callback<Void>() {
+                @Override
+                public void onResponse(Call<Void> call, Response<Void> response) {
+                    AlunoDAO dao = new AlunoDAO(ListaAlunosActivity.this);
+                    dao.deleta(aluno);
+                    dao.close();
+                    carregaLista();
+                }
 
-                carregaLista();
-                return false;
-            }
+                @Override
+                public void onFailure(Call<Void> call, Throwable t) {
+                    Toast.makeText(ListaAlunosActivity.this, "Nao foi possível remover o aluno", Toast.LENGTH_SHORT).show();
+                }
+            });
+            return false;
         });
     }
 
@@ -200,7 +208,7 @@ public class ListaAlunosActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        if(requestCode == 100) {
+        if (requestCode == 100) {
             Log.i("resultado_permissao", "resultado da permissao da ligacao...");
         }
     }

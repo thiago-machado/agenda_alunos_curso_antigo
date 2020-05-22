@@ -6,8 +6,10 @@ import br.com.alura.agenda.modelo.Aluno;
 import br.com.alura.agenda.modelo.dto.AlunosSync;
 import retrofit2.Call;
 import retrofit2.http.Body;
+import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.POST;
+import retrofit2.http.Path;
 
 public interface AlunoServices {
 
@@ -16,4 +18,7 @@ public interface AlunoServices {
 
     @GET("aluno")
     Call<AlunosSync> lista();
+
+    @DELETE("aluno/{id}")
+    Call<Void> deleta(@Path("id") String id);
 }

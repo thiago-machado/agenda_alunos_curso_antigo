@@ -6,27 +6,20 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.StrictMode;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.Toast;
 
 import java.io.File;
 
-import br.com.alura.agenda.async.InsereAlunoTask;
 import br.com.alura.agenda.dao.AlunoDAO;
 import br.com.alura.agenda.modelo.Aluno;
-import br.com.alura.agenda.retrofit.RetrofitInializador;
+import br.com.alura.agenda.retrofit.RetrofitInicializador;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -103,7 +96,7 @@ public class FormularioActivity extends AppCompatActivity {
     }
 
     private void integrarViaAPI(Aluno aluno) {
-        Call call = new RetrofitInializador().getAlunoService().insere(aluno);
+        Call call = new RetrofitInicializador().getAlunoService().insere(aluno);
         call.enqueue(new Callback() {
 
             @Override
