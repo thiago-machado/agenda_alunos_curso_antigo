@@ -21,11 +21,16 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
+
 import java.util.List;
 
 import br.com.alura.agenda.adaper.AlunosAdapter;
 import br.com.alura.agenda.async.EnviaAlunosTask;
 import br.com.alura.agenda.dao.AlunoDAO;
+import br.com.alura.agenda.event.AtualizaListaAlunoEvent;
 import br.com.alura.agenda.modelo.Aluno;
 import br.com.alura.agenda.modelo.dto.AlunosSync;
 import br.com.alura.agenda.retrofit.RetrofitInicializador;
@@ -42,6 +47,16 @@ public class ListaAlunosActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_lista_alunos);
+
+        /*
+        Tornando ListaAlunosActivity um subscriber (ouvinte) de eventos.
+        Estamos registrando a própria Activity como "ouvinte" dos eventos.
+
+        Olhar método atualizaListaAlunoEvent() para consultar a implementaação do que
+        será executado quando receber a chamada do evento.
+         */
+        EventBus eventBus = EventBus.getDefault();
+        eventBus.register(this);
 
         listaAlunos = findViewById(R.id.lista_alunos);
 
@@ -62,6 +77,18 @@ public class ListaAlunosActivity extends AppCompatActivity {
 
         registerForContextMenu(listaAlunos);
         buscaAlunosNaAPI();
+    }
+
+    /*
+    Com o register, a classe ListaAlunosActivity já é capaz de receber as notificações,
+    mas ela ainda não reage aos eventos. Para isso, criaremos um método anotado com
+    @Subscribe que, por meio do parâmetro do método, indicaremos qual evento estaremos aguardando.
+
+    NOTA: para podermos atualizar a Activity, é necessário que estejamos na Thread MAIN.
+     */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void atualizaListaAlunoEvent(AtualizaListaAlunoEvent event){
+        carregaLista();
     }
 
     private void configurarSwipe() {
@@ -150,6 +177,7 @@ public class ListaAlunosActivity extends AppCompatActivity {
             call.enqueue(new Callback<Void>() {
                 @Override
                 public void onResponse(Call<Void> call, Response<Void> response) {
+                    Log.i("removendoaluno", "removendo...");
                     AlunoDAO dao = new AlunoDAO(ListaAlunosActivity.this);
                     dao.deleta(aluno);
                     dao.close();
@@ -194,7 +222,6 @@ public class ListaAlunosActivity extends AppCompatActivity {
         List<Aluno> alunos = dao.buscaAlunos();
         dao.close();
 
-        //ArrayAdapter<Aluno> adapter = new ArrayAdapter<Aluno>(this, android.R.layout.simple_list_item_1, alunos);
         AlunosAdapter adapter = new AlunosAdapter(this, alunos);
         listaAlunos.setAdapter(adapter);
     }

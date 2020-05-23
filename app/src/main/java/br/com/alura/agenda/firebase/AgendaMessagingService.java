@@ -2,11 +2,17 @@ package br.com.alura.agenda.firebase;
 
 import android.util.Log;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
+import org.greenrobot.eventbus.EventBus;
+
 import java.util.Map;
 
+import br.com.alura.agenda.dao.AlunoDAO;
+import br.com.alura.agenda.event.AtualizaListaAlunoEvent;
+import br.com.alura.agenda.modelo.dto.AlunosSync;
 import br.com.alura.agenda.retrofit.RetrofitInicializador;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -48,6 +54,72 @@ public class AgendaMessagingService extends FirebaseMessagingService {
          */
         Map<String, String> mensagem = remoteMessage.getData();
         Log.i("firebase_log", String.valueOf(mensagem));
+
+        converteParaAluno(mensagem);
+    }
+
+    /*
+    Com o json em mãos o que precisamos agora é de fato realizar a conversão para o
+    objeto da nossa App.
+    Atualmente o Retrofit faz manualmente esse processo de conversão, ou seja, o único método
+    que conhecemos até o momento seria por meio da classe JSONStringer que era aquele método
+    um pouco trabalhoso... Entretanto, já que estamos usando o Jackson como conversor do
+    Retrofit, podemos também utilizá-lo para converter essa String!
+     */
+    private void converteParaAluno(Map<String, String> mensagem) {
+
+        String chaveDeAcesso = "alunoSync";
+
+        if(mensagem.containsKey(chaveDeAcesso)){
+
+            String json = mensagem.get(chaveDeAcesso);
+            ObjectMapper mapper = new ObjectMapper();
+
+            try {
+                // Convertendo o JSON em uma instância de AlunosSync
+                AlunosSync alunoSync = mapper.readValue(json, AlunosSync.class);
+
+                /*
+                Pode parecer estranho usar o "this" como contexto para o AlunoDAO já que não
+                estamos em uma Activity.
+                No entanto, por baixo dos panos, a classe FirebaseMessagingService tem uma
+                extensão de Context, tornando isso possível.
+                 */
+                AlunoDAO alunoDAO = new AlunoDAO(this);
+                alunoDAO.sincroniza(alunoSync.getAlunos());
+                alunoDAO.close();
+
+                /*
+                ATUALIZANDO O ADAPTER DA ACTIVITY
+
+                A solução que utilizaremos funciona da seguinte forma: uma notificação é
+                enviada e a listagem quando estiver em foco, fará a atualização de si mesma.
+
+                Desta forma, garantimos a atualização da listagem só quando ela estiver em uso.
+                A forma de fazer isso é por meio da biblioteca EventBus.
+
+                A biblioteca EventBus usa o conceito de publish/subscribe no qual o emissor do evento é
+                o publisher e o ouvinte/receptor do evento é o subscriber. Desta forma, o emissor
+                envia um evento para o EventBus e o mesmo se encarrega de distribuir os eventos para
+                as outras entidades que são subscriber daquele evento.
+
+                NOTA: EventBus é uma biblioteca que deve ser adicionada ao projeto via gradle.
+                 */
+
+                /*
+                Essa notificação/evento deve ser uma classe criada por nós mesmos, que indicará
+                qual exatamente foi o evento. Esta classe também servirá para indicar para o
+                EventBus quais outras entidades serão notificadas. Isso porque estas outras
+                entidades serão subscriber desta classe de evento. Chamaremos a nova classe
+                de AtualizaListaAlunoEvent para indicar exatamente o que ela significa.
+                 */
+                EventBus eventBus = EventBus.getDefault();
+                eventBus.post(new AtualizaListaAlunoEvent());
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     /**
