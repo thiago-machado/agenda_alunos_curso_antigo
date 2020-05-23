@@ -18,11 +18,11 @@ import br.com.alura.agenda.modelo.Aluno;
 /**
  * Embora tenhamos indicado a versão do banco, o método onUpgrade só é acionado
  * apenas quando mudamos de versão do banco com a qual já existe no celular.
- *
+ * <p>
  * Em outras palavras, se o usuário instalar a nossa App pela primeira vez, ou então,
  * desinstalar e instalar novamente, ele terá a tabela que está escrita no onCreate() do
  * SQLite.
- *
+ * <p>
  * Sendo assim, precisamos também modificar a tabela do onCreate() para que contenha os
  * mesmos dados das nossas últimas atualizações do banco.
  */
@@ -59,13 +59,14 @@ public class AlunoDAO extends SQLiteOpenHelper {
 
         String alterarAlunoID = "UPDATE Alunos SET id=? WHERE id=?";
         for (Aluno aluno : alunos) {
-            db.execSQL(alterarAlunoID, new String[] {geraUUID(), aluno.getId()});
+            db.execSQL(alterarAlunoID, new String[]{geraUUID(), aluno.getId()});
         }
     }
 
     /**
      * A geração do UUID com java é bastante simples por que já existe uma classe que facilita essa
      * criação. O mais legal é que ela já fornece o método necessário para que o UUID seja randômico.
+     *
      * @return
      */
     private String geraUUID() {
@@ -116,10 +117,11 @@ public class AlunoDAO extends SQLiteOpenHelper {
     /**
      * UUID == NULL = aluno criado pelo APP
      * UUID != NULL = aluno que veio do servidor
+     *
      * @param aluno
      */
     private void insereUUIDSeNecessario(Aluno aluno) {
-        if(aluno.getId() == null) {
+        if (aluno.getId() == null) {
             aluno.setId(geraUUID());
         }
     }
@@ -143,7 +145,7 @@ public class AlunoDAO extends SQLiteOpenHelper {
         Cursor c = db.rawQuery(sql, null);
         List<Aluno> alunos = iterarListaAlunos(c);
 
-        for(Aluno aluno : alunos) {
+        for (Aluno aluno : alunos) {
             Log.i("uuid_aluno", "id: " + aluno.getId());
         }
         c.close();
@@ -152,7 +154,7 @@ public class AlunoDAO extends SQLiteOpenHelper {
 
     private List<Aluno> iterarListaAlunos(Cursor c) {
         List<Aluno> alunos = new ArrayList<>();
-        while(c.moveToNext()){
+        while (c.moveToNext()) {
             Aluno aluno = new Aluno();
             aluno.setId(c.getString(c.getColumnIndex("id")));
             aluno.setNome(c.getString(c.getColumnIndex("nome")));
@@ -183,7 +185,7 @@ public class AlunoDAO extends SQLiteOpenHelper {
 
     public boolean isAluno(String telefone) {
         SQLiteDatabase db = getReadableDatabase();
-        Cursor c = db.rawQuery("SELECT * FROM Alunos WHERE telefone = ?", new String[]{ telefone} );
+        Cursor c = db.rawQuery("SELECT * FROM Alunos WHERE telefone = ?", new String[]{telefone});
         int resultados = c.getCount();
         c.close();
         return resultados > 0;
@@ -191,9 +193,13 @@ public class AlunoDAO extends SQLiteOpenHelper {
 
     public void sincroniza(List<Aluno> alunos) {
         for (Aluno aluno : alunos) {
-            if(existe(aluno)){
-                altera(aluno);
-            }else {
+            if (existe(aluno)) {
+                if (aluno.estaDesativado()) {
+                    deleta(aluno);
+                } else {
+                    altera(aluno);
+                }
+            } else if (!aluno.estaDesativado()) { // Condição que evita cadastrar os alunos recém removidos do app
                 insere(aluno);
             }
         }

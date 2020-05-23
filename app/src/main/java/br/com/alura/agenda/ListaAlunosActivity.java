@@ -42,6 +42,7 @@ public class ListaAlunosActivity extends AppCompatActivity {
 
     private ListView listaAlunos;
     private SwipeRefreshLayout swipe;
+    private EventBus eventBus;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,8 +56,7 @@ public class ListaAlunosActivity extends AppCompatActivity {
         Olhar método atualizaListaAlunoEvent() para consultar a implementaação do que
         será executado quando receber a chamada do evento.
          */
-        EventBus eventBus = EventBus.getDefault();
-        eventBus.register(this);
+        eventBus = EventBus.getDefault();
 
         listaAlunos = findViewById(R.id.lista_alunos);
 
@@ -91,15 +91,30 @@ public class ListaAlunosActivity extends AppCompatActivity {
         carregaLista();
     }
 
-    private void configurarSwipe() {
-        swipe = findViewById(R.id.swipe_lista_alunos);
-        swipe.setOnRefreshListener(() -> buscaAlunosNaAPI());
-    }
-
     @Override
     protected void onResume() {
         super.onResume();
+        eventBus.register(this);
         carregaLista();
+    }
+
+    /*
+     Todas as vezes que a activity for criada terá a única instância necessária do
+     Event Bus e será registrada em seguida no onResume(), então, caso entre em background,
+     isto é, entre em modo onPause() deixará o registro. Caso voltar ela será registrada
+     novamente no onResume() e assim manteremos o ciclo em que não corremos o risco de
+     receber uma exception por estar realizando um código que deveria funcionar apenas
+     quando a activity estivesse em foreground, isto é, com a tela ativa.
+     */
+    @Override
+    protected void onPause() {
+        super.onPause();
+        eventBus.unregister(this);
+    }
+
+    private void configurarSwipe() {
+        swipe = findViewById(R.id.swipe_lista_alunos);
+        swipe.setOnRefreshListener(() -> buscaAlunosNaAPI());
     }
 
     private void buscaAlunosNaAPI() {
