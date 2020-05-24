@@ -32,8 +32,8 @@ import br.com.alura.agenda.async.EnviaAlunosTask;
 import br.com.alura.agenda.dao.AlunoDAO;
 import br.com.alura.agenda.event.AtualizaListaAlunoEvent;
 import br.com.alura.agenda.modelo.Aluno;
-import br.com.alura.agenda.modelo.dto.AlunosSync;
 import br.com.alura.agenda.retrofit.RetrofitInicializador;
+import br.com.alura.agenda.sync.AlunosSincronizador;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -43,12 +43,14 @@ public class ListaAlunosActivity extends AppCompatActivity {
     private ListView listaAlunos;
     private SwipeRefreshLayout swipe;
     private EventBus eventBus;
+    private AlunosSincronizador alunosSincronizador;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_lista_alunos);
 
+        alunosSincronizador = new AlunosSincronizador(this);
         /*
         Tornando ListaAlunosActivity um subscriber (ouvinte) de eventos.
         Estamos registrando a própria Activity como "ouvinte" dos eventos.
@@ -76,7 +78,7 @@ public class ListaAlunosActivity extends AppCompatActivity {
         });
 
         registerForContextMenu(listaAlunos);
-        buscaAlunosNaAPI();
+        alunosSincronizador.buscaTodos();
     }
 
     /*
@@ -88,6 +90,9 @@ public class ListaAlunosActivity extends AppCompatActivity {
      */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void atualizaListaAlunoEvent(AtualizaListaAlunoEvent event){
+        if(swipe.isRefreshing()) {
+            swipe.setRefreshing(false); // SUMINDO COM O GIF DE REFRESH DO SWIPE
+        }
         carregaLista();
     }
 
@@ -114,28 +119,7 @@ public class ListaAlunosActivity extends AppCompatActivity {
 
     private void configurarSwipe() {
         swipe = findViewById(R.id.swipe_lista_alunos);
-        swipe.setOnRefreshListener(() -> buscaAlunosNaAPI());
-    }
-
-    private void buscaAlunosNaAPI() {
-        Call<AlunosSync> call = new RetrofitInicializador().getAlunoService().lista();
-        call.enqueue(new Callback<AlunosSync>() {
-            @Override
-            public void onResponse(Call<AlunosSync> call, Response<AlunosSync> response) {
-                List<Aluno> alunos = response.body().getAlunos();
-                AlunoDAO dao = new AlunoDAO(ListaAlunosActivity.this);
-                dao.sincroniza(alunos);
-                dao.close();
-                carregaLista();
-                swipe.setRefreshing(false); // SUMINDO COM O GIF DE REFRESH DO SWIPE
-            }
-
-            @Override
-            public void onFailure(Call<AlunosSync> call, Throwable t) {
-                Log.e("get_alunos", "FALHOU A BUSCA DOS ALUNOS...", t);
-                swipe.setRefreshing(false);
-            }
-        });
+        swipe.setOnRefreshListener(() -> alunosSincronizador.buscaTodos());
     }
 
     @Override
