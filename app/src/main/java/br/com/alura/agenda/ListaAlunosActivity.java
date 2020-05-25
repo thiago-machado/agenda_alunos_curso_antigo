@@ -183,30 +183,30 @@ public class ListaAlunosActivity extends AppCompatActivity {
         itemSMS.setIntent(intentSMS);
     }
 
+    /**
+     * Nesse momento, sinaliza no app que o aluno está 'desativado' e 'desincronizado'.
+     * Em seguida, tenta se comunicar com o servidor:
+     * 1) Caso sucesso, remove o aluno fisicamente do app;
+     * 2) Caso contrário, ao executar o Swipe quando tiver conexão novamente, o server receberá o aluno
+     * 'desincronizado' e o processo descrito na condição acima se satisfará.
+     * @param menu
+     * @param aluno
+     */
     private void criarMenuItemDeletar(ContextMenu menu, final Aluno aluno) {
         MenuItem deletar = menu.add("Deletar");
         deletar.setOnMenuItemClickListener(menuItem -> {
 
-            Call<Void> call = new RetrofitInicializador().getAlunoService().deleta(aluno.getId());
+            AlunoDAO dao = new AlunoDAO(ListaAlunosActivity.this);
+            dao.deleta(aluno);
+            dao.close();
+            carregaLista();
 
-            call.enqueue(new Callback<Void>() {
-                @Override
-                public void onResponse(Call<Void> call, Response<Void> response) {
-                    Log.i("removendoaluno", "removendo...");
-                    AlunoDAO dao = new AlunoDAO(ListaAlunosActivity.this);
-                    dao.deleta(aluno);
-                    dao.close();
-                    carregaLista();
-                }
-
-                @Override
-                public void onFailure(Call<Void> call, Throwable t) {
-                    Toast.makeText(ListaAlunosActivity.this, "Nao foi possível remover o aluno", Toast.LENGTH_SHORT).show();
-                }
-            });
+            sincronizador.deleta(aluno);
             return false;
         });
     }
+
+
 
     private void criarMenuItemSite(ContextMenu menu, Aluno aluno) {
         /*

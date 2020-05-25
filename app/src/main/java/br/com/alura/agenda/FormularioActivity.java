@@ -78,9 +78,6 @@ public class FormularioActivity extends AppCompatActivity {
                 if (aluno.getId() != null) {
                     dao.altera(aluno);
                 } else {
-                    // COMO NÃO USAMOS MAIS UM ID DO TIPO LONG, NÃO PRECISAMOS MAIS USAR O RETORNO DOS INSERTS
-                    //long id = dao.insere(aluno);
-                    //aluno.setId(id);
                     dao.insere(aluno);
                 }
 
