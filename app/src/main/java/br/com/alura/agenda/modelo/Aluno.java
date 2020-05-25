@@ -28,6 +28,7 @@ public class Aluno implements Serializable {
     private Double nota;
     private String caminhoFoto;
     private int desativado;
+    private int sincronizado;
 
     public String getId() {
         return id;
@@ -85,20 +86,26 @@ public class Aluno implements Serializable {
         this.caminhoFoto = caminhoFoto;
     }
 
-    public int getDesativado() {
-        return desativado;
-    }
+    public int getDesativado() { return desativado; }
 
-    public void setDesativado(int desativado) {
-        this.desativado = desativado;
-    }
+    public void setDesativado(int desativado) { this.desativado = desativado; }
 
-    public boolean estaDesativado(){
-        return desativado == 1;
-    }
+    public boolean estaDesativado(){ return desativado == 1; }
+
+    public int getSincronizado() { return sincronizado; }
+
+    public void setSincronizado(int sincronizado) { this.sincronizado = sincronizado; }
 
     @Override
     public String toString() {
         return getId() + " - " + getNome();
+    }
+
+    public void sincroniza() {
+        sincronizado = 1;
+    }
+
+    public void desincroniza() {
+        this.sincronizado = 0;
     }
 }

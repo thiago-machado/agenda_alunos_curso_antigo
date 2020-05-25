@@ -5,8 +5,11 @@ import android.util.Log;
 
 import org.greenrobot.eventbus.EventBus;
 
+import java.util.List;
+
 import br.com.alura.agenda.dao.AlunoDAO;
 import br.com.alura.agenda.event.AtualizaListaAlunoEvent;
+import br.com.alura.agenda.modelo.Aluno;
 import br.com.alura.agenda.modelo.dto.AlunosSync;
 import br.com.alura.agenda.preferences.AlunoPreferences;
 import br.com.alura.agenda.retrofit.RetrofitInicializador;
@@ -20,10 +23,12 @@ public class AlunosSincronizador {
     private final Context context;
     private final AlunoPreferences preferences;
     private EventBus bus = EventBus.getDefault();
+    private RetrofitInicializador retrofit;
 
     public AlunosSincronizador(Context context) {
         this.context = context;
         preferences = new AlunoPreferences(context);
+        retrofit = new RetrofitInicializador();
     }
 
     /**
@@ -39,12 +44,12 @@ public class AlunosSincronizador {
     }
 
     private void buscaNovosAlunos(){
-        Call<AlunosSync> call = new RetrofitInicializador().getAlunoService().novos(preferences.getVersao());
+        Call<AlunosSync> call = retrofit.getAlunoService().novos(preferences.getVersao());
         call.enqueue(buscaAlunosCallback());
     }
 
     private void buscaTodosAlunos() {
-        Call<AlunosSync> call = new RetrofitInicializador().getAlunoService().lista();
+        Call<AlunosSync> call = retrofit.getAlunoService().lista();
         call.enqueue(buscaAlunosCallback());
     }
 
@@ -73,5 +78,27 @@ public class AlunosSincronizador {
                 bus.post(new AtualizaListaAlunoEvent());
             }
         };
+    }
+
+    public void sincronizaAlunosInternos(){
+        final AlunoDAO dao = new AlunoDAO(context);
+        List<Aluno> alunos = dao.listaNaoSincronizados();
+        Call<AlunosSync> call = retrofit.getAlunoService().atualiza(alunos);
+
+        call.enqueue(new Callback<AlunosSync>() {
+            @Override
+            @EverythingIsNonNull
+            public void onResponse(Call<AlunosSync> call, Response<AlunosSync> response) {
+                AlunosSync alunoSync = response.body();
+                dao.sincroniza(alunoSync.getAlunos());
+                dao.close();
+            }
+
+            @Override
+            @EverythingIsNonNull
+            public void onFailure(Call<AlunosSync> call, Throwable t) {
+
+            }
+        });
     }
 }

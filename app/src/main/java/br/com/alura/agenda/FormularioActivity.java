@@ -71,6 +71,8 @@ public class FormularioActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             case R.id.menu_formulario_ok:
                 Aluno aluno = helper.getAluno();
+                aluno.desincroniza();
+
                 AlunoDAO dao = new AlunoDAO(this);
 
                 if (aluno.getId() != null) {

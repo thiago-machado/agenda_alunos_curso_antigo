@@ -43,14 +43,14 @@ public class ListaAlunosActivity extends AppCompatActivity {
     private ListView listaAlunos;
     private SwipeRefreshLayout swipe;
     private EventBus eventBus;
-    private AlunosSincronizador alunosSincronizador;
+    private AlunosSincronizador sincronizador;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_lista_alunos);
 
-        alunosSincronizador = new AlunosSincronizador(this);
+        sincronizador = new AlunosSincronizador(this);
         /*
         Tornando ListaAlunosActivity um subscriber (ouvinte) de eventos.
         Estamos registrando a própria Activity como "ouvinte" dos eventos.
@@ -78,7 +78,20 @@ public class ListaAlunosActivity extends AppCompatActivity {
         });
 
         registerForContextMenu(listaAlunos);
-        alunosSincronizador.buscaTodos();
+        sincronizador.buscaTodos();
+
+        /*
+        Na criação da Activity, após buscar todos os alunos (da API e internos),
+        tentará integrar os alunos que foram criados internamente, mas que não constam
+        no servidor.
+        Existem 2 cenários onde esse método precisa ser chamado:
+        1) Criação da Activity: o usuário abriu o app, cadastrou o aluno e fechou o aplicativo.
+        Ao ter rede novamente e abrir o app, os alunos não integrados devem ser enviados;
+        2) Aluno não fechou o app após cadastrar o novo aluno. Nesse caso, assim que o usuário
+        tiver rede, ele poderá utilizar o Swipe Refresh para realizar essa integração.
+        Podemos chamar esse tipo de interação como "sincronismo forçado". (ver método configurarSwipe(...)).
+         */
+        sincronizador.sincronizaAlunosInternos();
     }
 
     /*
@@ -119,7 +132,10 @@ public class ListaAlunosActivity extends AppCompatActivity {
 
     private void configurarSwipe() {
         swipe = findViewById(R.id.swipe_lista_alunos);
-        swipe.setOnRefreshListener(() -> alunosSincronizador.buscaTodos());
+        swipe.setOnRefreshListener(() -> {
+            sincronizador.buscaTodos();
+            sincronizador.sincronizaAlunosInternos();
+        });
     }
 
     @Override
