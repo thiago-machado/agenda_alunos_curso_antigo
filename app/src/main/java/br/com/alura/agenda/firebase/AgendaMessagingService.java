@@ -14,6 +14,7 @@ import br.com.alura.agenda.dao.AlunoDAO;
 import br.com.alura.agenda.event.AtualizaListaAlunoEvent;
 import br.com.alura.agenda.modelo.dto.AlunosSync;
 import br.com.alura.agenda.retrofit.RetrofitInicializador;
+import br.com.alura.agenda.sync.AlunosSincronizador;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -85,9 +86,10 @@ public class AgendaMessagingService extends FirebaseMessagingService {
                 No entanto, por baixo dos panos, a classe FirebaseMessagingService tem uma
                 extensão de Context, tornando isso possível.
                  */
-                AlunoDAO alunoDAO = new AlunoDAO(this);
-                alunoDAO.sincroniza(alunoSync.getAlunos());
-                alunoDAO.close();
+                //AlunoDAO alunoDAO = new AlunoDAO(this);
+                //alunoDAO.sincroniza(alunoSync.getAlunos());
+                //alunoDAO.close();
+                new AlunosSincronizador(this).sincroniza(alunoSync);
 
                 /*
                 ATUALIZANDO O ADAPTER DA ACTIVITY

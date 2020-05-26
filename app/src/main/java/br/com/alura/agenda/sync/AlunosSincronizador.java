@@ -1,11 +1,14 @@
 package br.com.alura.agenda.sync;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.util.Log;
 import android.widget.Toast;
 
 import org.greenrobot.eventbus.EventBus;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 import br.com.alura.agenda.ListaAlunosActivity;
@@ -62,11 +65,7 @@ public class AlunosSincronizador {
             public void onResponse(Call<AlunosSync> call, Response<AlunosSync> response) {
                 AlunosSync alunosSync = response.body();
 
-                preferences.salvaVersao(alunosSync.getMomentoDaUltimaModificacao());
-
-                AlunoDAO dao = new AlunoDAO(context);
-                dao.sincroniza(alunosSync.getAlunos());
-                dao.close();
+                sincroniza(alunosSync);
 
                 Log.i("versao", preferences.getVersao());
 
@@ -98,6 +97,36 @@ public class AlunosSincronizador {
         };
     }
 
+    public void sincroniza(AlunosSync alunosSync) {
+        String versao = alunosSync.getMomentoDaUltimaModificacao();
+        
+        if(temVersaoNova(versao)) {
+            preferences.salvaVersao(alunosSync.getMomentoDaUltimaModificacao());
+            AlunoDAO dao = new AlunoDAO(context);
+            dao.sincroniza(alunosSync.getAlunos());
+            dao.close();
+        }
+    }
+
+    @SuppressLint("SimpleDateFormat")
+    private boolean temVersaoNova(String versao) {
+
+        if(!preferences.temVersao())
+            return true;
+
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+
+        try {
+            Date dataExterna = format.parse(versao);
+            Date dataInterna = format.parse(preferences.getVersao());
+            return dataExterna.after(dataInterna);
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        }
+
+        return false;
+    }
+
     private void sincronizaAlunosInternos(){
         final AlunoDAO dao = new AlunoDAO(context);
         List<Aluno> alunos = dao.listaNaoSincronizados();
@@ -107,9 +136,7 @@ public class AlunosSincronizador {
             @Override
             @EverythingIsNonNull
             public void onResponse(Call<AlunosSync> call, Response<AlunosSync> response) {
-                AlunosSync alunoSync = response.body();
-                dao.sincroniza(alunoSync.getAlunos());
-                dao.close();
+                sincroniza(response.body());
             }
 
             @Override
