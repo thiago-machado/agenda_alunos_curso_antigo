@@ -71,6 +71,22 @@ public class AlunosSincronizador {
                 Log.i("versao", preferences.getVersao());
 
                 bus.post(new AtualizaListaAlunoEvent());
+
+                /**
+                 * Após buscar todos os alunos (da API e internos), tentará integrar os alunos que
+                 * foram criados internamente, mas que não constam no servidor.
+                 * Existem 2 cenários onde esse método precisa ser chamado:
+                 * 1) Criação da Activity: o usuário abriu o app, cadastrou o aluno e fechou o aplicativo.
+                 * Ao ter rede novamente e abrir o app, os alunos não integrados devem ser enviados;
+                 * 2) Aluno não fechou o app após cadastrar o novo aluno. Nesse caso, assim que o usuário
+                 * tiver rede, ele poderá utilizar o Swipe Refresh para realizar essa integração.
+                 * Podemos chamar esse tipo de interação como "sincronismo forçado". (ver método configurarSwipe(...)).
+                 *
+                 * IMPORTANTE: estamos dando prioridade ao que vem do servidor antes de enviar as alterações!!!
+                 * Por exemplo: se desligarmos a internet do celular e editarmos o mesmo aluno no app e no servidor,
+                 * a edição que será mantida será a do servidor!
+                 */
+                sincronizaAlunosInternos();
             }
 
             @Override
@@ -82,7 +98,7 @@ public class AlunosSincronizador {
         };
     }
 
-    public void sincronizaAlunosInternos(){
+    private void sincronizaAlunosInternos(){
         final AlunoDAO dao = new AlunoDAO(context);
         List<Aluno> alunos = dao.listaNaoSincronizados();
         Call<AlunosSync> call = retrofit.getAlunoService().atualiza(alunos);
